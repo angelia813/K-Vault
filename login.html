@@ -530,9 +530,12 @@
     (function() {
       if (
         window.UIDesignManager &&
-        typeof window.UIDesignManager.restorePersisted === 'function'
+        typeof window.UIDesignManager.syncFromServer === 'function'
       ) {
-        window.UIDesignManager.restorePersisted();
+        window.UIDesignManager.syncFromServer({
+          silent: true,
+          applyLocalOnFailure: true
+        });
         return;
       }
       const bgMode = localStorage.getItem('loginBackgroundMode') || 'gradient';

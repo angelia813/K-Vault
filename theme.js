@@ -318,6 +318,11 @@
       return Promise.reject(new Error("Fetch API is not available"));
     }
 
+    var url =
+      method === "GET"
+        ? API_ENDPOINT + (API_ENDPOINT.indexOf("?") >= 0 ? "&" : "?") + "_ts=" + Date.now()
+        : API_ENDPOINT;
+
     var init = {
       method: method,
       credentials: "include",
@@ -332,7 +337,7 @@
       init.body = JSON.stringify({ config: config });
     }
 
-    return fetch(API_ENDPOINT, init).then(function (response) {
+    return fetch(url, init).then(function (response) {
       return response
         .text()
         .then(function (raw) {
@@ -386,6 +391,7 @@
         return {
           success: true,
           source: "server",
+          binding: payload && payload.binding ? String(payload.binding) : "",
           settings: cloneSettings(normalized),
         };
       })
@@ -423,13 +429,58 @@
       .then(function (payload) {
         var remote = extractConfigPayload(payload) || localApplied;
         var normalized = normalizeSettings(remote);
+        var binding = payload && payload.binding ? String(payload.binding) : "";
         saveLocalSettings(normalized);
         applySettings(normalized, { persist: false, silent: !!opts.silent });
-        return {
-          success: true,
-          source: "server",
-          settings: cloneSettings(normalized),
-        };
+        return requestUiConfig("GET")
+          .then(function (verifyPayload) {
+            var verifyRemote = extractConfigPayload(verifyPayload);
+            if (!verifyRemote) {
+              throw new Error("服务端回读配置格式异常");
+            }
+            var verified = normalizeSettings(verifyRemote);
+            saveLocalSettings(verified);
+            applySettings(verified, { persist: false, silent: !!opts.silent });
+
+            var isMatch = JSON.stringify(verified) === JSON.stringify(normalized);
+            if (!isMatch) {
+              return {
+                success: false,
+                source: "local",
+                binding:
+                  binding ||
+                  (verifyPayload && verifyPayload.binding
+                    ? String(verifyPayload.binding)
+                    : ""),
+                settings: cloneSettings(verified),
+                error: "保存后回读校验未通过，请检查 KV 绑定与 Functions 日志。",
+              };
+            }
+
+            return {
+              success: true,
+              source: "server",
+              binding:
+                binding ||
+                (verifyPayload && verifyPayload.binding
+                  ? String(verifyPayload.binding)
+                  : ""),
+              settings: cloneSettings(verified),
+            };
+          })
+          .catch(function (verifyError) {
+            return {
+              success: false,
+              source: "local",
+              binding: binding,
+              settings: cloneSettings(localApplied),
+              error:
+                "保存后读取校验失败：" +
+                (verifyError && verifyError.message
+                  ? verifyError.message
+                  : String(verifyError)),
+            };
+          });
       })
       .catch(function (error) {
         try {
@@ -441,6 +492,7 @@
         return {
           success: false,
           source: "local",
+          binding: "",
           settings: cloneSettings(localApplied),
           error: error && error.message ? error.message : String(error),
         };

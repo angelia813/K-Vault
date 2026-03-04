@@ -3786,7 +3786,13 @@
         }
 
         if (typeof manager.syncFromServer === 'function') {
-          await manager.syncFromServer({ silent: true, applyLocalOnFailure: false });
+          const syncResult = await manager.syncFromServer({
+            silent: true,
+            applyLocalOnFailure: true
+          });
+          if (syncResult && syncResult.success === false && syncResult.error) {
+            this.$message.warning(`读取服务端配置失败，已使用本地缓存：${syncResult.error}`);
+          }
         }
 
         const snapshot = manager.getSettings();
@@ -4024,9 +4030,10 @@
             const saveRequest = typeof manager.saveToServer === 'function'
               ? manager.saveToServer(values)
               : Promise.resolve({
-                  success: true,
+                  success: false,
                   source: 'local',
-                  settings: manager.setSettings(values, { persist: true })
+                  settings: manager.setSettings(values, { persist: true }),
+                  error: '当前前端脚本未启用服务端同步能力，请刷新页面后重试。'
                 });
 
             saveRequest
@@ -4034,8 +4041,9 @@
                 instance.confirmButtonLoading = false;
                 if (result?.success) {
                   instance.confirmButtonText = '✓ 已保存';
-                  setSaveStatus('success', '已保存并同步到服务端。');
-                  this.$message.success('前端 UI 设置已保存并同步。');
+                  const bindingName = result?.binding ? `（KV: ${result.binding}）` : '';
+                  setSaveStatus('success', `已保存并同步到服务端${bindingName}。`);
+                  this.$message.success(`前端 UI 设置已保存并同步${bindingName}`);
                 } else {
                   instance.confirmButtonText = '已本地保存';
                   setSaveStatus('warning', '服务端不可用，已保存到本地缓存。');
