@@ -21,13 +21,13 @@
 ## Screenshots
 
 <p align="center">
-  <img src="demo/登录页面.webp" alt="Login Page" width="220" />
-  <img src="demo/首页上传页面.webp" alt="Home Upload Page" width="220" />
-  <img src="demo/后台管理页面.webp" alt="Admin Page" width="220" />
+   <img src="demo/登录页面.webp" alt="Login Page" width="300" />
+   <img src="demo/首页上传页面.webp" alt="Home Upload Page" width="300" />
+   <img src="demo/后台管理页面.webp" alt="Admin Page" width="300" />
 </p>
 <p align="center">
-  <img src="demo/图片浏览页面.webp" alt="Image Browse Page" width="220" />
-  <img src="demo/WebDAV页面.webp" alt="WebDAV Page" width="220" />
+   <img src="demo/图片浏览页面.webp" alt="Image Browse Page" width="300" />
+   <img src="demo/WebDAV页面.webp" alt="WebDAV Page" width="300" />
 </p>
 
 ## Features
